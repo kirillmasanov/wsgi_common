@@ -7,7 +7,6 @@ MAX_SIZE = 1024
 
 
 def parse_header_line(line):
-    print(line)
     key, value = line.split(':', maxsplit=1)
     return key, value
 
@@ -28,8 +27,18 @@ def parse_http(data):
 
 
 def process_request(data):
-    print(json.dumps(request, indent=4))
+    # print(json.dumps(request, indent=4))
     return f'Hello {request["path"]}'
+
+
+def prepare_response(response):
+    content_length = len(response)
+    response_headers = '\r\n'.join([
+        'HTTP/1.1 200 OK',
+        f'Content-Length: {content_length}',
+        'Content-Type: text/html',
+        ])
+    return response_headers
 
 
 with socket.socket() as s:
@@ -38,8 +47,12 @@ with socket.socket() as s:
     while True:
         sock, addr = s.accept()
         with sock:
-            print('Address info:', addr)
+            # print('Address info:', addr)
             request_data = sock.recv(MAX_SIZE).decode('utf-8').strip()
             request = parse_http(request_data)
             response = process_request(request)
+            http_response = prepare_response(response)
+            print(http_response)
+            sock.sendall(http_response.encode('utf-8'))
+            sock.sendall('\r\n\n'.encode('utf-8'))
             sock.sendall(response.encode('utf-8'))
